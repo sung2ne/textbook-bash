@@ -1,0 +1,31 @@
+#!/bin/bash
+# post-merge: 병합 후 의존성 자동 갱신
+
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+echo ""
+echo "병합 완료 후 의존성 확인 중..."
+
+# 병합으로 변경된 파일 목록 확인
+CHANGED_FILES=$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD 2>/dev/null || true)
+
+# Node.js 의존성 갱신
+if echo "$CHANGED_FILES" | grep -q "package-lock.json"; then
+    echo "  package-lock.json 변경 감지 — npm install 실행 중..."
+    (cd "$PROJECT_ROOT" && npm install --silent 2>&1 | tail -3)
+    echo -e "${GREEN}  npm install 완료${NC}"
+fi
+
+# Python 의존성 갱신
+if echo "$CHANGED_FILES" | grep -q "requirements.txt"; then
+    echo "  requirements.txt 변경 감지 — pip install 실행 중..."
+    if [ -f "$PROJECT_ROOT/.venv/bin/pip" ]; then
+        "$PROJECT_ROOT/.venv/bin/pip" install -r "$PROJECT_ROOT/requirements.txt" -q
+    fi
+    echo -e "${GREEN}  pip install 완료${NC}"
+fi
+
+echo ""
+exit 0
