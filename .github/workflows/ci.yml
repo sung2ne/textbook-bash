@@ -1,0 +1,72 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ─── 린트 검사 ────────────────────────────────────────────────────────────
+  lint:
+    name: 린트 검사
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: ShellCheck 설치
+        run: sudo apt-get install -y shellcheck
+
+      - name: 스크립트 실행 권한
+        run: chmod +x scripts/ci_lint.sh
+
+      - name: 린트 실행
+        run: bash scripts/ci_lint.sh
+
+  # ─── 테스트 ───────────────────────────────────────────────────────────────
+  test:
+    name: 테스트
+    runs-on: ubuntu-24.04
+    needs: lint   # lint 완료 후 실행
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 스크립트 실행 권한
+        run: chmod +x scripts/ci_test.sh
+
+      - name: 테스트 실행
+        run: bash scripts/ci_test.sh
+
+      - name: 테스트 결과 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+
+  # ─── 매트릭스 빌드 ────────────────────────────────────────────────────────
+  # 매트릭스는 여러 환경 조합을 자동으로 테스트하는 기능입니다.
+  # 여기서는 OS 조합으로 호환성을 검증합니다.
+  # (각 OS에 사전 설치된 Bash 버전이 사용됩니다)
+  matrix-test:
+    name: 호환성 테스트 (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: lint
+
+    strategy:
+      matrix:
+        os: [ ubuntu-22.04, ubuntu-24.04 ]
+      fail-fast: false   # 하나 실패해도 나머지 계속 실행
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bash 버전 확인
+        run: bash --version
+
+      - name: 스크립트 테스트
+        run: bash scripts/ci_test.sh

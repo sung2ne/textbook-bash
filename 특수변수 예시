@@ -1,0 +1,6 @@
+#!/bin/bash
+echo "스크립트명: $0"
+echo "인수 개수: $#"
+echo "모든 인수: $@"
+echo "직전 종료코드: $?"
+echo "현재 PID: $$"
