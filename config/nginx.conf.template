@@ -1,0 +1,13 @@
+server {
+    listen ${APP_PORT};
+    server_name ${SERVER_NAME};
+
+    location / {
+        proxy_pass http://localhost:${BACKEND_PORT};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    error_log /var/log/nginx/${APP_ENV}_error.log;
+    access_log /var/log/nginx/${APP_ENV}_access.log;
+}
